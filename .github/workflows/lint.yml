@@ -1,0 +1,27 @@
+name: Lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+
+  lint:
+
+    runs-on: ubuntu-latest
+
+    container: registry.services.k8s.true.nl/library/helm-push:2.0.0
+
+    steps:
+      - name: Check Out Repo
+        uses: actions/checkout@v3
+
+      - name: Run Lint
+        run: |
+          cd charts
+          for i in `ls -d */ | cut -f1 -d'/'`
+          do
+            helm lint $i
+          done

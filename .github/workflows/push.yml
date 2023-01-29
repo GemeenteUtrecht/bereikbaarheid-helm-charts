@@ -1,0 +1,39 @@
+name: "Push to Harbor registry"
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'charts/backend/Chart.yaml'
+      - 'charts/frontend/Chart.yaml'
+  workflow_dispatch:
+
+jobs:
+
+  push:
+
+    runs-on: ubuntu-latest
+
+    container: registry.services.k8s.true.nl/library/helm-push:2.0.0
+
+    steps:
+      - name: Check Out Repo
+        uses: actions/checkout@v3
+
+      - name: Install Helm Push
+        run: |
+          mkdir -vp /root/.helm/plugins
+          helm plugin install https://github.com/chartmuseum/helm-push  
+
+      - name: Add Repo & Update local repository
+        run: |
+          helm repo add k8s-true ${{ secrets.HARBOR_CHART_REPO }} --username=${{ secrets.HARBOR_USERNAME }} --password=${{ secrets.HARBOR_PASSWORD }}
+          helm repo update
+
+      - name: Helm Push
+        run: |
+          cd charts
+          for i in `ls -d */ | cut -f1 -d'/'`
+          do
+            helm cm-push $i k8s-true
+          done
